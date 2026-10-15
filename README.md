@@ -19,6 +19,7 @@
 <p align="center">
   <img alt="version 1.1" src="https://img.shields.io/badge/version-1.1-ffb547?style=flat-square&labelColor=0e1118">
   <img alt="FM-1" src="https://img.shields.io/badge/for-M--VAVE%20FM--1-f07a9c?style=flat-square&labelColor=0e1118">
+  <img alt="SMK-37 Pro" src="https://img.shields.io/badge/for-M--VAVE%20SMK--37%20Pro-6ec1e4?style=flat-square&labelColor=0e1118">
   <img alt="GPL-3.0" src="https://img.shields.io/badge/license-GPL--3.0-b092ff?style=flat-square&labelColor=0e1118">
 </p>
 

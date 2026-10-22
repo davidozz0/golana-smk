@@ -833,6 +833,12 @@ static void ext_keys_block(void)
 }
 #endif
 
+#if BOARD_SMK37
+/* MENU > AUDIO > PAD TRACK (SMK-37 Pro): the track the pads play on their own (0..3), or the selected
+ * one (0xFF, the default). main.c calls pad_track_set. */
+static uint8_t kb_pad_trk = 0xFFu;
+static void pad_track_set(uint32_t v) { kb_pad_trk = v >= 1u && v <= NTRK ? (uint8_t)(v - 1u) : 0xFFu; }
+#endif
 static void keyboard_block(void)
 {
     uint32_t cur = fm1_in.notes, ch, k;
@@ -859,7 +865,12 @@ static void keyboard_block(void)
         if (!((ch >> k) & 1u))
             continue;
         if ((cur >> k) & 1u) {                    /* the selected track; the key-up goes to the same one */
+#if BOARD_SMK37
+            kb_trk[k] = (uint8_t)(song.grid == 0u && kb_pad_trk < NTRK && ((fm1_in.pnotes >> k) & 1u)
+                                  ? kb_pad_trk : song.sel);   /* a pad on its own track (PAD TRACK) */
+#else
             kb_trk[k] = song.sel;
+#endif
             if (kb_asleep) {                      /* (SCREEN OFF: the wake press is swallowed) */
                 kb_note[k] = KB_SILENT;
                 continue;
@@ -919,6 +930,9 @@ static void seq_start(void)
     beat_pos = 0; beat_n = 0;                      /* the ARP LED's beat from the top too */
     clk_pos = CLK_START;                           /* the metronome's first beat with step 0 */
     song.playing = 1;
+#if BOARD_SMK37
+    smk_trs_transport(0xFAu);                       /* SMK-37 Pro: MIDI Start on the TRS jack */
+#endif
     slicer_start();                                /* slicer.c: its step 0 with the sequencer's */
     perf_start();                                  /* perform.c: its 1/16 grid too */
 }
@@ -937,6 +951,9 @@ static void seq_stop(void)
 {
     uint32_t i;
     song.playing = 0;
+#if BOARD_SMK37
+    smk_trs_transport(0xFCu);                       /* SMK-37 Pro: MIDI Stop on the TRS jack */
+#endif
     cin_left = 0;                                  /* (a count-in: cancelled, nothing recorded) */
     cin_flush = 0;
     memset(cin_n, 0, sizeof cin_n);
@@ -1332,6 +1349,9 @@ static void events_block(uint32_t n)
 {
     uint32_t i, pr, seq_n = n;
     uint32_t clock_mode = (uint32_t)song.g[G_CLOCK];
+#if BOARD_SMK37
+    smk_trs_clock_block(n);                         /* SMK-37 Pro: MIDI clock out on the TRS jack */
+#endif
     if (midi_clock.mode != clock_mode) {
         seq_stop();
         memset(&midi_clock, 0, sizeof midi_clock);

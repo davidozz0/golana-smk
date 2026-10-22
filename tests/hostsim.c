@@ -27,7 +27,9 @@
 #undef memset
 #undef memcpy
 #undef memcmp
+#ifndef FM1_IN_EXTERN                    /* web/emu: the SMK-37 simulator brings its own fm1_in */
 static struct { volatile uint32_t notes, buttons; } fm1_in;
+#endif
 #include "../firmware/src/core.h"
 #include "../firmware/src/engines.c"
 #include "../firmware/src/params.c"
@@ -35,6 +37,7 @@ static struct { volatile uint32_t notes, buttons; } fm1_in;
 #include "../firmware/src/voice.c"
 #include "../firmware/src/slicer.c"
 #include "../firmware/src/fx.c"
+#include "../firmware/src/smk_trs.c"               /* SMK-37 Pro: TRS OUT hooks (empty off BOARD_SMK37) */
 static void fm1_delay_ms(uint32_t ms) { (void)ms; }
 #include "../firmware/src/usb.c"
 #include "../firmware/src/midi_uart.c"                /* TRS MIDI IN: its parser (um_byte) feeds midi_in_q */

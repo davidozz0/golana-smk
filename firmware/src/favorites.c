@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
+#include <stdint.h>   /* (a fragment of felucca.c: here so the file also reads on its own)
 #define FELUCCA_FAVORITES 1
 /* Stable engine/preset references; fixed capacity independent of optional engines. */
 typedef struct {

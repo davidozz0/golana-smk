@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
+#include <stdint.h>   /* (a fragment of felucca.c: here so the file also reads on its own)
 /* Phase distortion. The waveforms are a C port of the oscillator of
  * CrispyZebra (Leo Kuroshita, GPL-3.0, github.com/hugelton/CrispyZebra), the
  * author's own phase-distortion core: a -cos table read through a bent phase whose

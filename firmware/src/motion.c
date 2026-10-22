@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
+#include <stdint.h>   /* (a fragment of felucca.c: here so the file also reads on its own)
 /* Sparse, bounded step automation. Main-loop writes publish under the same
  * interrupt guard as parameter batches. The ISR only scans MOTION_MAX fixed records (128 since 1.2, FUN10; 64 before).
  * p[] is the sounding value; motion_base_value() is the patch's saved value.

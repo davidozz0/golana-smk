@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
+#include <stdint.h>   /* (a fragment of felucca.c: here so the file also reads on its own)
 /* SLICER: a per-track insert, a tempo-synced 16-step gate / stutter. It works on the track's dry
  * mono signal after DIST and before LEVEL / PAN / the sends (fx.c mix_part), so the sends follow
  * the chopped sound.

@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
+#include <stdint.h>   /* (a fragment of felucca.c: here so the file also reads on its own)
 /* SLICES (EDIT family, a SLICE track only; after EDIT 2): the slices of the selected part's sample, set by hand.
  * Based on hugelton/Felucca#27 by andreahaku (SLICE EDIT), on the current UI: a page of the EDIT family with the
  * action-page OCT+ / OCT- of SAVE > TOOLS.

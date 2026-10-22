@@ -20,6 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+#include <stdint.h>   /* (a fragment of felucca.c: here so the file also reads on its own)
 /* Physical models of DaisySP (Source/PhysicalModeling, Filters, Noise, Utility; MIT) in fixed
  * point for a CPU without an FPU. The PHYS engine (eng_phys.c) plays them.
  *

@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
+#include <stdint.h>   /* (a fragment of felucca.c: here so the file also reads on its own)
 /* MIDI LEARN (1.5, Discussion #170): a controller's CC set to any knob's parameter, on the device. GLO held + D4
  * (LEARN, ui_layer.c) turns it on and off. On: a knob turned on any page (HOME, the sound's pages, MIXER: the
  * parameter of a track it edits) picks its parameter on the selected track, as it edits it; the next CC that comes

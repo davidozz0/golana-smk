@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
+#include <stdint.h>   /* (a fragment of felucca.c: here so the file also reads on its own)
 /* Engine table (order = PRESETS browsing order and the engine numbers of the editor protocol), the
  * factory patterns (SAVE > PHRASES) and the parts' sounds at power-on. */
 #include "dsp.c"

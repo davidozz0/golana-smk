@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
+#include <stdint.h>   /* (a fragment of felucca.c: here so the file also reads on its own)
 /* Projects: four slots. The slots live in .noinit RAM: they
  * survive resets and UBOOT entry. With FELUCCA_FLASH (default) every save
  * also goes to flash through storage.c, and an

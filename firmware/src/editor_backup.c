@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
+#include <stdint.h>   /* (a fragment of felucca.c: here so the file also reads on its own)
 /* Complete musical archive: no raw addresses are accepted. Small objects are staged
  * in main-loop RAM and fully validated before the existing A/B commit path writes.
  * Sample restore uses SMP_BEGIN/WRITE/END and its existing CRC/header-last commit.

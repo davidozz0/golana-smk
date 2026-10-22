@@ -15,6 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <stdint.h>   /* (a fragment of felucca.c: here so the file also reads on its own)
 /* FM6 core: msfa (the 6-operator FM synthesis core of Dexed, Source/msfa) ported to C.
  * Kept from msfa: its envelope (env.cc, with ACCURATE_ENVELOPE), pitch envelope (pitchenv.cc), LFO (lfo.cc),
  * note set-up (the note: level / rate scaling, velocity, operator pitch) and its renderer (fm_core.cc,

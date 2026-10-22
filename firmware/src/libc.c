@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
+#include <stdint.h>   /* (a fragment of felucca.c: here so the file also reads on its own)
 /* The few libc routines the compiler may call implicitly (struct copies,
  * zeroing). Freestanding: no other libc. */
 void *memset(void *d, int c, unsigned n)

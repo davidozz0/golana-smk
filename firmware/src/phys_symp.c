@@ -20,6 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+#include <stdint.h>   /* (a fragment of felucca.c: here so the file also reads on its own)
 /* Sympathetic strings after Rings (Emilie Gillet, MIT; rings/dsp/part.cc RenderStringVoice and
  * string.cc), in fixed point, for the PHYS engine's SYMP model (eng_phys.c). The plucked main string is
  * phys_dsp.c's (DaisySP's String, itself from Rings); its output drives a few more strings tuned to other

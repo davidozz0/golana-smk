@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
+#include <stdint.h>   /* (a fragment of felucca.c: here so the file also reads on its own)
 /* DIGITAL (engine 1, four-operator FM): retired, and its sounds converted to FM6.
  *
  * "The DIGITAL engine has been replaced by FM6 (Dexed-based)" (1.0). Its DSP stays in the tree (eng_digital.c)

@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
+#include <stdint.h>   /* (a fragment of felucca.c: here so the file also reads on its own)
 /* GRAIN: a granular engine over the SAMPLE material. Felucca's own design.
  *
  * Source: the SAMPLE sets (built in, IMA ADPCM in flash) and the user slots USR1..3 (XIP), the

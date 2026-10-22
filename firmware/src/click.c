@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
+#include <stdint.h>   /* (a fragment of felucca.c: here so the file also reads on its own)
 /* The metronome's click (1.1, Ideas Discussion #131): MENU > AUDIO CLICK (OFF / REC / ON), CLICK LEVEL (LOW / MID / HIGH)
  * and COUNT-IN (OFF / 1 BAR / 2 BARS). seq.c decides when a beat clicks (click_beat: the song tempo's quarter notes, 4/4,
  * the bar's first beat accented; the count-in's beats whatever CLICK is); this file makes the sound. A short sine blip

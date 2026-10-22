@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
+#include <stdint.h>   /* (a fragment of felucca.c: here so the file also reads on its own)
 /* FM6: classic 6-operator FM. The synthesis is msfa (Dexed's core), ported to integer C in fm6_core.c
  * (Apache-2.0); this file is the Felucca engine around it.
  *
@@ -33,6 +34,7 @@
  * State: per voice an fm6_note_t (in the part's engine memory as PHYS's slots, engines.c eng_mem; fm6_note_of:
  * voice_t.s[] is too small), per part the patch, the patch through the macros (fm6_eff, rebuilt in the audio ISR when either
  * changes) and the LFO (once a block). */
+// pi-lens-ignore: clang
 #include "fm6_core.c"
 #include "felucca_fm6.h"         /* tools/gen_fm6_patches.py: FM6_INIT, FM6_FACTORY[] */
 

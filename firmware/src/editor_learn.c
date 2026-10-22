@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
+#include <stdint.h>   /* (a fragment of felucca.c: here so the file also reads on its own)
 /* MIDI LEARN's map for the editor (1.5, EDITOR_PROTOCOL.md "MIDI LEARN"; INFO 43 01 ML_N): LEARN_GET lists it,
  * LEARN_SET learns one CC, clears one, or clears all. The device's own rules (midi_learn.c ml_learn): one CC sets one
  * parameter, a parameter has one CC; CC0 1 6 11 32 38 64 96..101 120..127 are never learned */

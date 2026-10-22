@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
+#include <stdint.h>   /* (a fragment of felucca.c: here so the file also reads on its own)
 /* Physical panel: which matrix button / encoder carries which printed label.
  * The matrix ids are known, the printed labels are not, so
  * the mapping is a table with a best guess, overridable by HARDWARE CALIBRATION

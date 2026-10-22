@@ -145,8 +145,7 @@ def cc0_entries(setname, kind):
     """-> [(file name, int16 samples at TR, loop or None, root)]"""
     files = sorted((CC0 / setname).glob("*.wav"))
     out = []
-    if kind != "kit":
-        conv = octave_conv(files)
+    conv = octave_conv(files) if kind != "kit" else 0      # (a kit has no octave: KIT_BASE + k, below)
     for k, p in enumerate(files):
         sr, x = wav(p)
         x = x[max(0, onset(x) - 16):]

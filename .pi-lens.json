@@ -4,6 +4,8 @@
     "firmware/src/*.c",
     "firmware/src/*.h",
     "firmware/loader/*.c",
-    "firmware/hal/*.h"
+    "firmware/hal/*.h",
+    "tools/*.py",
+    "tests/*.py"
   ]
 }

@@ -50,6 +50,9 @@ void fm1_timer5_irq(void)
     }
     if (owed & 1u)
         usb_poll();
+#if BOARD_SMK37
+    smk_trs_poll();                                 /* SMK-37 Pro: service the TRS OUT queue (2 kHz) */
+#endif
 #if FELUCCA_UART
     if (owed & 2u)
         uart_midi_poll();
@@ -92,8 +95,11 @@ static void smk_faders(void)
             last[i] = 0xFF;
     }
     for (i = 0; i < 4u && i < NTRK; i++) {
-        uint32_t v = fm1_in.fader[i];
+        uint32_t v;
         int16_t *pv;
+        if (SMK_FADER_DISABLE & (1u << i))
+            continue;                                     /* broken/missing fader: never applied */
+        v = fm1_in.fader[i];
         if (last[i] == 0xFF || fm1_in.frames < 200u) {   /* (the first readings settle) */
             last[i] = (uint8_t)v;
             continue;
@@ -395,6 +401,11 @@ static void fm1_main(void)
 #if BOARD_SMK37
         smk_faders();
         smk_wheels();
+        smk_trs_configure((ui_padprefs & PAD_TRS_OUT) != 0u);   /* TRS OUT switch (ui_padprefs bit 5) */
+#if !defined(FELUCCA_WEB)
+        smk_pad_sens(ui_padprefs & 3u);                 /* PAD SENS */
+        pad_track_set((ui_padprefs >> 2) & 7u);         /* PAD TRACK: the pads' own track (target only) */
+#endif
         padled_flush();                                 /* the pads' colours, between LCD transfers */
 #endif
         ui_draw();

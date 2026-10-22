@@ -4,6 +4,7 @@
  * Flat: SURF cards and panels on the palette's background, no rules, one type family (Inter Tight, three sizes), tracks
  * named by their numbers 1..4 on a cushion (icons.c trk_icon). Four columns <-> KNOB 1..4. Rendering is lazy:
  * every element remembers what it last drew and is redrawn only on change. */
+#include <stdint.h>                                     /* (a fragment of felucca.c: here so the file also reads on its own) */
 static int project_save(uint32_t slot);
 static void panel_setup(void);
 static void project_load(uint32_t slot);
@@ -72,6 +73,12 @@ static uint32_t up_gen;                      /* bumped on every user bank change
 #define PREF_PREVIEW (0x02u << 16)
 #define PREF_CHORD_ADD (0x04u << 16)
 #define PREF_HELP (0x08u << 16)
+#define ui_padprefs (favorites.factory[15][13]) /* SMK-37 Pro, MENU's settings that have no bit left above: bits 0-1
+                                                * PAD SENS (0 NORM, 1 HIGH, 2 HIGHER, 3 MAX; smk_input.h
+                                                * smk_pad_sens), bits 2-4 PAD TRACK (0 SEL, 1..4 = T1..T4;
+                                                * seq.c pad_track_set), bit 5 TRS OUT (PAD_TRS_OUT: the 3.5 mm jack,
+                                                * smk_trs.c) */
+#define PAD_TRS_OUT 0x20u
 /* 1.3 (Discussions #112, #134): MENU > DISPLAY > HOME, what the HOME page shows under its four cards: 0 SCOPE (the
  * oscilloscope, as before), 1 TRACKS (the four tracks as rows: ui_graph.c draw_home_tracks), 2 LEVELS (1.5, #134: the
  * rows of TRACKS, and KNOB 1..4 the LEVEL of T1..T4 in place of the engine's four: home_param). A byte of its own no

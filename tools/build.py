@@ -111,7 +111,8 @@ def generate():
     tools = SRC / "tools"
     cmds = [[tools / "gen_aa_font.py", GEN / "ui_fonts.h", "--preset", "inter-tight"],
             [tools / "gen_aa_icons.py", GEN / "ui_icons.h"],
-            [tools / "gen_aa_keycaps.py", GEN / "ui_keycaps.h"],
+            [tools / "gen_aa_keycaps.py", GEN / "ui_keycaps.h"]
+            + (["--knob-first", "5"] if BOARD == "smk37" else []),   # SMK-37: the screen's knobs are K5..K8
             [tools / "gen_ui_palettes.py", GEN / "ui_palettes.h"],
             [tools / "gen_tables.py", GEN / "felucca_tables.h"],
             [tools / "gen_fm6_patches.py", GEN / "felucca_fm6.h"],
@@ -119,7 +120,7 @@ def generate():
     procs = [subprocess.Popen([sys.executable, *map(str, c)], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                               text=True) for c in cmds]
     failed = []
-    for c, p in zip(cmds, procs):
+    for c, p in zip(cmds, procs, strict=True):
         sys.stdout.write(p.communicate()[0])
         if p.returncode:
             failed.append(c[0].name)
@@ -211,6 +212,9 @@ def build_app():
     if v in ("0", "1", "2", "3"):
         flags.append(f"-DFELUCCA_USB_LAYOUT={v}")
     flags.append(f'-DFELUCCA_ID="{PRODUCT}"')
+    _fdr = os.environ.get("SMK_FADER_DISABLE")   # smk_input.h: the faders this unit does not have (bit i = fader i+1)
+    if _fdr:
+        flags.append(f"-DSMK_FADER_DISABLE={_fdr}")
     if VERSION:
         flags.append(f'-DFELUCCA_VERSION="{VERSION}"')
     # felucca.c goes to LLVM IR without the optimizer, the main-loop functions (UI, stores, editor) are
@@ -249,7 +253,9 @@ def build_app():
     (OUT / "felucca.dis").write_text(dis)
 
     def symv(name):
-        return int(re.search(r"^([0-9a-f]+) .*\s" + name + r"$", syms, re.M).group(1), 16)
+        m = re.search(r"^([0-9a-f]+) .*\s" + name + r"$", syms, re.M)
+        assert m is not None, f"build: no symbol {name} in the map"
+        return int(m.group(1), 16)
     img = bytearray((OUT / "text.bin").read_bytes())
     # .ram_text and .data follow .text at their load addresses; crt0 copies them by words
     for sect, lname in (("ramtext.bin", "_rt_load"), ("data.bin", "_data_load")):

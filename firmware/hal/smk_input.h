@@ -91,6 +91,11 @@ static const uint8_t SMK_LEDC[SMK_NLED] = {0x0c, 0x12, 0x00, 0x10, 0x0d, 0x1d, 0
 static const uint8_t SMK_PADMUX[8] = {1, 2, 3, 0, 4, 7, 5, 6};
 /* mux C (ch2): address 0..3 -> fader 1,2,3,0; 4, 5 wheels; 6 pedal; 7 battery */
 static const uint8_t SMK_FADMUX[4] = {1, 2, 3, 0};
+/* Faders physically broken or missing are never applied: bit i (0..3) = fader i+1 ignored.
+ * Default 0 (every fader works); build with -DSMK_FADER_DISABLE=0x1 to ignore fader 1. */
+#ifndef SMK_FADER_DISABLE
+#define SMK_FADER_DISABLE 0u
+#endif
 enum { SMK_ADC_PADA = 1, SMK_ADC_PADB = 8, SMK_ADC_MUXC = 2 };
 /* the pads are the 16 white keys of the FM-1's 27 (F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 F5 G5): the step
  * grid, the drum sounds and every layer's tiles land on them, low notes at the bottom: the bottom row
@@ -431,9 +436,34 @@ static void fm1__frame(void)
 }
 
 /* ---------------------------------------------------------------- analog --- */
-#define SMK_PAD_ON 24u            /* above the baseline: a hit starts */
-#define SMK_PAD_OFF 12u           /* below base + this: released */
+/* A pad is analog: a hit starts when its reading rises SMK_PAD_ON above the (stock-tracking)
+ * baseline, and ends SMK_PAD_OFF below it. MENU > SYSTEM > PAD SENS (ui.c ui_padsens) makes
+ * these a runtime choice (smk_pad_sens); the default is the stock 24 / 12. */
+#ifndef SMK_PAD_ON
+#define SMK_PAD_ON 24u
+#endif
+#ifndef SMK_PAD_OFF
+#define SMK_PAD_OFF 12u
+#endif
 #define SMK_PAD_PEAKN 3u          /* samples (2.4 ms apart) for the peak */
+static uint8_t smk_pad_thr_on = SMK_PAD_ON, smk_pad_thr_off = SMK_PAD_OFF;
+/* The pad's raw range is narrow (idle 0, a press ~100..250) while the stock curve expects
+ * ~50..950, so the stock curve makes even a firm press about velocity 10 (near silent).
+ * PAD SENS: NORM keeps the stock curve; HIGH/HIGHER/MAX map (peak - baseline) straight to
+ * velocity by a q8 gain (1/4, 1/2, 3/4). The thresholds matter little (a press clears them
+ * at once) but stay, stock at NORM. */
+static uint8_t smk_pad_vel_mode, smk_pad_vel_gain;
+static void smk_pad_sens(uint32_t lvl)                 /* 0 NORM (stock), 1 HIGH, 2 HIGHER, 3 MAX */
+{
+    static const uint8_t ON[4] = {24u, 16u, 10u, 6u};
+    static const uint8_t OFF[4] = {12u, 8u, 5u, 3u};
+    static const uint8_t G[4] = {0u, 64u, 128u, 192u};   /* q8: 0 = stock curve, else x1/4, x1/2, x3/4 */
+    lvl &= 3u;
+    smk_pad_thr_on = ON[lvl];
+    smk_pad_thr_off = OFF[lvl];
+    smk_pad_vel_mode = (uint8_t)lvl;
+    smk_pad_vel_gain = G[lvl];
+}
 
 static void smk__padq(uint32_t pad, uint32_t vel)     /* a pad hit (vel) or release (0): its white key */
 {
@@ -466,7 +496,7 @@ static void smk__pad(uint32_t p, uint32_t raw)
     uint32_t base = fm1_in.pad_base[p], st = fm1_in.pad_st[p];
     fm1_in.pad_raw[p] = (uint16_t)raw;
     if (st == 0u) {
-        if (raw > base + SMK_PAD_ON) {
+        if (raw > base + smk_pad_thr_on) {
             fm1_in.pad_st[p] = 1;
             fm1_in.pad_peak[p] = (uint16_t)raw;
         } else if (base > raw) {
@@ -485,12 +515,22 @@ static void smk__pad(uint32_t p, uint32_t raw)
         }
         fm1_in.pad_st[p] = 0x80;
         fm1_in.pad_low[p] = 0;
-        smk__padq(p, smk_vel7(smk_curve(smk_trim_pad[p], fm1_in.pad_peak[p])));
+        {
+            uint32_t peak = fm1_in.pad_peak[p], vel;
+            if (smk_pad_vel_mode == 0u) {
+                vel = smk_vel7(smk_curve(smk_trim_pad[p], peak));           /* NORM: stock */
+            } else {
+                uint32_t d = peak > base ? peak - base : 0u;                /* HIGH..MAX: pressure -> velocity */
+                uint32_t v = (d * smk_pad_vel_gain) >> 8;
+                vel = v < 1u ? 1u : v > 127u ? 127u : v;
+            }
+            smk__padq(p, vel);
+        }
         return;
     }
     fm1_in.pad_press[p] = (uint8_t)(raw <= 0x200u ? raw >> 4 : (raw - 0x200u) / 4u + 32u > 127u ? 127u
                                                                       : (raw - 0x200u) / 4u + 32u);
-    if (raw < base + SMK_PAD_OFF) {
+    if (raw < base + smk_pad_thr_off) {
         if (++fm1_in.pad_low[p] >= 2u) {
             fm1_in.pad_st[p] = 0;
             fm1_in.pad_press[p] = 0;

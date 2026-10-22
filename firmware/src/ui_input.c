@@ -418,7 +418,19 @@ static void smk_leds(const uint8_t *nl, const uint8_t *nb, const uint8_t *nm, co
         return;
     for (c = 0; c < SMK_NPAD; c++) {                    /* white key c on its pad (the top row first) */
         uint32_t id = LED_KEY0 + SMK_WHITE_NOTE[c];
+#ifndef SMK_PAD_LEDS_OWN
+#define SMK_PAD_LEDS_OWN 1                     /* 1: a pad lights when the pad itself is hit (see below), 0: as before */
+#endif
+#if SMK_PAD_LEDS_OWN
+        /* SMK_PADLEDS: on the step grids (smk_grid) the pads show what the keys show: the steps playing and the
+         * beats. Elsewhere the lit level comes from the pad itself (smk__padq sets fm1_in.pnotes; the keybed sets
+         * knotes, so playing the keyboard no longer lights the pads). The service levels stay either way. */
+        uint32_t lv = smk_pad_grid ? (nl[id] ? 256u : nb[id] ? br + 2u : nm[id] ? 64u : og[id] | sg[id] ? 16u : 0u)
+                                  : ((fm1_in.pnotes >> SMK_WHITE_NOTE[c]) & 1u) ? 256u
+                                  : nm[id] ? 64u : og[id] | sg[id] ? 16u : 0u;
+#else
         uint32_t lv = nl[id] ? 256u : nb[id] ? br + 2u : nm[id] ? 64u : og[id] | sg[id] ? 16u : 0u;
+#endif
         padled_set(SMK_PAD_OF_WHITE(c), (uint8_t)(r * lv >> 8), (uint8_t)(g * lv >> 8), (uint8_t)(b * lv >> 8));
     }
 }

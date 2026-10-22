@@ -113,10 +113,23 @@ def knob_quadrant(r):
 
 
 def main():
-    out = Path(sys.argv[1])
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("out")
+    ap.add_argument("--knob-first", type=int, default=1,
+                    help="number on the four screen knobs (K<first>..K<first+3>); the SMK-37 passes 5")
+    a = ap.parse_args()
+    labels = []
+    for cname, label in LABELS:
+        if label in ("K1", "K2", "K3", "K4"):
+            label = "K" + str(a.knob_first + int(label[1]) - 1)
+        elif label == "K1-4":
+            label = f"K{a.knob_first}-{a.knob_first + 3}"
+        labels.append((cname, label))
+    out = Path(a.out)
     font = ar.open_font(FONT + f"@{KC_WGHT}", KC_PX)
     data, rows = bytearray(), []
-    for cname, label in LABELS:
+    for cname, label in labels:
         w, b = keycap(font, label)
         rows.append((cname, label, len(data), w))
         data += b

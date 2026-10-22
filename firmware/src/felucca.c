@@ -86,6 +86,10 @@
 #include "fx.c"
 
 /* ------------------------------------------------- MIDI, sequencer --- */
+#if BOARD_SMK37
+#define SMK_TRS_TARGET 1         /* the real UART on the target; host / emulator builds stub it */
+#include "smk_trs.c"             /* SMK-37 Pro: TRS MIDI OUT on the 3.5 mm jack (UART1 TX, PC7) */
+#endif
 #include "usb.c"
 #if FELUCCA_UART
 #include "midi_uart.c"

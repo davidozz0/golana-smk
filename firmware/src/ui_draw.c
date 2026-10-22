@@ -54,6 +54,56 @@ static void draw_battery(int32_t bx)
     cv_icon_mid(bx, H_HEAD / 2, 24, batt_icon(lvl), lvl == 1 ? T_ACCENT : lvl == 0 ? T_MID : T_THEME, T_BG);   /* 24 px: the glyph is wide and short */
 }
 
+/* SMK_VOL_BEGIN: the master volume by the battery (SMK-37: K1 is an encoder, nothing showed it) */
+#ifndef SMK_VOL_STYLE
+#define SMK_VOL_STYLE 3                        /* 0 off, 1 bar below the battery, 2 line + cursor, 3 bar left of it */
+#endif
+#ifndef SMK_VOL_KNOB
+#define SMK_VOL_KNOB 1                         /* 1: fill by the knob's position (0..1023), 0: by the gain (0..4095) */
+#endif
+#ifndef SMK_VOL_W
+#define SMK_VOL_W 6                            /* the bar's width in px: 5..7 fit between the octave (208) and the battery (216) */
+#endif
+#if BOARD_SMK37 && SMK_VOL_STYLE
+static int32_t smk_vol_level(void)                      /* the knob's position 0..1023, for the bar and its redraw */
+{
+#if SMK_VOL_KNOB
+    uint32_t g = (uint32_t)(song.master_q12 < 0 ? 0 : song.master_q12) << 8;   /* master_of_pot's inverse */
+    uint32_t r = 0, bit = 0x200u;
+    while (bit) {
+        uint32_t t = r | bit;
+        if (t * t <= g)
+            r = t;
+        bit >>= 1;
+    }
+    return (int32_t)(r > 1023u ? 1023u : r);
+#else
+    return song.master_q12 < 0 ? 0 : song.master_q12 > 4095 ? 4095 : song.master_q12;
+#endif
+}
+static void draw_volume(void)
+{
+    int32_t lvl = smk_vol_level();
+#if SMK_VOL_STYLE == 1
+    int32_t x = 214, y = 18, w = 24, h = 4, f = w * lvl / (SMK_VOL_KNOB ? 1023 : 4095);
+    cv_frame(x, y, w, h, T_MID);
+    if (f > 2)
+        cv_rect(x + 1, y + 1, f - 2, h - 2, T_ACCENT);
+#elif SMK_VOL_STYLE == 2
+    int32_t x = 214, y = 20, w = 24, f = w * lvl / (SMK_VOL_KNOB ? 1023 : 4095);
+    cv_rect(x, y, w, 1, T_MID);
+    cv_rect(x + (f > w - 2 ? w - 2 : f), y - 2, 2, 5, T_ACCENT);
+#else
+    int32_t x = 214 - SMK_VOL_W, y = 4, w = SMK_VOL_W, h = 16;      /* just left of the battery (ink 216) */
+    int32_t f = (h - 2) * lvl / (SMK_VOL_KNOB ? 1023 : 4095);
+    cv_frame(x, y, w, h, T_MID);
+    if (f > 0)
+        cv_rect(x + 1, y + h - 1 - f, w - 2, f, T_ACCENT);
+#endif
+}
+#endif
+/* SMK_VOL_END */
+
 /* ---------------------------------------------------- rolling digits --- */
 /* A number that changes rolls its changed digits like a slot machine; only the drawing: the value, the gauge,
  * the hot colour and the sound change at once. Up: the old digit leaves upward and the new one comes from below;
@@ -394,6 +444,9 @@ static void draw_head(void)
         head_group();
     if (!(msg && centre))
         draw_battery(HEAD_BAT_X);
+#if BOARD_SMK37 && SMK_VOL_STYLE
+    draw_volume();                                 /* SMK-37: the master volume by the battery */
+#endif
     cv_blit(0, Y_HEAD);
 }
 /* LINE: 1 px dividers in the BG gaps between the strips, not around them: under the header, above and
@@ -480,7 +533,11 @@ static void draw_column_tall(uint32_t c, const char *label, const char *val, con
     uint16_t lc = hot ? T_ACCENT : mot ? T_THEME : T_MID;
     const aafont_t *lf = &AF_M, *vf = &AF_L;
     int32_t ly = LG_LY, vy, lw = 0, mw;
+#if BOARD_SMK37
+    char k[3] = {'K', (char)('5' + c), 0};          /* the SMK-37's four screen knobs are K5..K8 */
+#else
     char k[3] = {'K', (char)('1' + c), 0};
+#endif
     uint32_t ic = mot ? ICON_X_MOTION : icon, isz = 16u;
     cv_begin(COL_W, LG_CARD_H, T_BG);
     cv_rrect(0, 0, COL_W, LG_CARD_H, 4, T_SURF, T_BG);

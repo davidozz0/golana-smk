@@ -10,7 +10,15 @@ static void master_poll(void)
 {
     int32_t a = fm1_adc_read(FM1_ADC_MASTER);
     if (a >= 0) {
+#if BOARD_SMK37
+        master_knob = a * 16;                       /* the SMK-37's MASTER is KNOB 1, an encoder: the value enters
+                                                     * straight. The 1/8 glide is for the FM-1's analog pot (noise),
+                                                     * and on the SMK it kept the level moving for ~0.5 s after every
+                                                     * detent, so whatever showed it was repainted 60 times a second
+                                                     * and the panel flickered for that half second */
+#else
         master_knob += (a * 16 - master_knob) / 8;
+#endif
         song.master_q12 = master_of_pot((uint32_t)(master_knob / 16));
         /* (no ui.force here: it redraws the whole screen, and the level moves every frame while the knob's
          * glide runs, so the panel flashed. The volume display redraws itself — golana_ui.c gu_draw_head

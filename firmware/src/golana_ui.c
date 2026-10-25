@@ -490,6 +490,9 @@ static void gu_draw_head(void)
     n[2] = (char)('0' + (gu.prog + 1u) % 10u);
     n[3] = 0;
     h = gu_hash(h, toast ? gu.toast : gu.name);
+#if BOARD_SMK37
+    h = gu_hashv(h, gu_vol_on() ? 1u | (uint32_t)gu_vol_q << 1 : 0u);   /* (now it moves one step per detent) */
+#endif
     h = gu_hashv(h, (int32_t)(gu.prog | gu.dirty << 8 | toast << 9 | (t->p[GL_ARPON] != 0) << 10 |
                               (uint32_t)(song.octave + 8) << 12 | (uint32_t)(song.playing != 0) << 16 |
                               (uint32_t)batt_shown() << 20));
@@ -513,6 +516,19 @@ static void gu_draw_head(void)
     }
     if (song.playing)
         gu_chip(x, 8, "PLAY", gu_btn_col(B_REC), GC_INK, &x);
+#if BOARD_SMK37
+    if (gu_vol_on()) {                                 /* MASTER, a bar and 0..100 in place of the program's name */
+        char vb[8];
+        int32_t xn, f;
+        fmt_int(vb, (int32_t)gu_vol_q);
+        xn = cv_text(8, 7, &AF_M, "MASTER", GC_AMBER) + 8;
+        f = 72 * (int32_t)gu_vol_q / 100;
+        cv_rect(xn, 12, 72, 8, GC_RAISE);
+        if (f > 0)
+            cv_rect(xn, 12, f, 8, GC_AMBER);
+        cv_text(xn + 72 + 8, 7, &AF_M, vb, GC_TEXT);
+    } else
+#endif
     if (toast) {
         cv_text(8, 7, &AF_M, gu.toast, GC_AMBER);
     } else {
@@ -612,30 +628,6 @@ static void gu_draw_card(uint32_t k)
     uint32_t h = 0x811C9DC5u;
     int hot = gu.hot == (int8_t)k && fm1_ms - gu.hot_t < 700u;
     uint16_t acc = gu_btn_col(pg->btn), surf = hot ? GC_RAISE : GC_SURF;
-#if BOARD_SMK37
-    if (k == 0u && gu_vol_on()) {                            /* KNOB 1 is MASTER here: its card shows the level while the
-                                                         * knob moves. Same box and same one-blit path as every
-                                                         * other card (the header flickered instead: it is 240 x 32
-                                                         * and repainting it while the knob's glide ran could not be
-                                                         * kept up by the panel) */
-        char vb[8];
-        int32_t pct = (int32_t)gu_vol_q, f = (GU_CW - 12) * pct / 100;
-        h = gu_hashv(h, 0x5A5A0000u | (uint32_t)pct);
-        if (h == gu.sig_card[k])
-            return;
-        gu.sig_card[k] = h;
-        fmt_int(vb, pct);
-        cv_begin(GU_CW, GU_CH, GC_BG);
-        cv_rrect(0, 0, GU_CW, GU_CH, -8, GC_SURF, GC_BG);
-        cv_text_on(8, 6, &AF_S, "MASTER", GC_AMBER, GC_SURF);
-        cv_text(8, GU_CH / 2 - 6, &AF_M, vb, GC_TEXT);
-        cv_rect(6, GU_CH - 14, GU_CW - 12, 6, GC_RAISE);
-        if (f > 0)
-            cv_rect(6, GU_CH - 14, f, 6, GC_AMBER);
-        cv_blit((uint32_t)x, (uint32_t)y);
-        return;
-    }
-#endif
     gu_text(q, b);
     h = gu_hash(h, b);
     h = gu_hash(h, q->label ? q->label : "");

@@ -449,44 +449,34 @@ static void gu_chip(int32_t xr, int32_t y, const char *s, uint16_t bg, uint16_t 
  * (hal/smk_input.h: FM1_ADC_MASTER is a virtual pot on K1), so turning it shows the level in the header for a
  * second in place of the program: "MASTER", a bar and 0..100 (Clipper's cursor). smk_vol_level (ui_draw.c) is the
  * knob's position 0..1023, so the bar follows the knob and not the square-law gain master_q12 holds. */
-static uint32_t gu_vol_t;
-static int32_t gu_vol_shown = -1;
-static int gu_vol_on(void) { return gu_vol_t != 0u && fm1_ms - gu_vol_t < 1000u; }
-/* The cursor has a strip of its own, painted on the header's row: the header is 240 x 32 and the LCD is written
- * through SPI, so repainting all of it at every step of the knob's glide wiped and redrew the cursor 60 times a
- * second (it flickered). The strip is painted at most every GU_VOL_MS, and only when the number changes. */
-#define GU_VOL_MS 60u
-#define GU_VOL_X 8
-#define GU_VOL_Y 4
-#define GU_VOL_W 184
-#define GU_VOL_H 24
-static int32_t gu_vol_pct = -1;                      /* the value on screen, -1 = none */
+/* The cursor is drawn in the header's own canvas: ONE write of one region per frame. The earlier version wrote a
+ * separate strip on top of the header in the same frame (two overlapping LCD windows), and before that it
+ * repainted the header on every step of the knob's glide (~60 a second, the panel could not keep up): both
+ * flickered. The value shown is SAMPLED (GU_VOL_MS) and in steps of 2, so the header is repainted a handful of
+ * times a second at most, and only while the knob moves. */
+#define GU_VOL_MS 150u
+static uint32_t gu_vol_t;                            /* when the knob last moved (0 = never) */
+static int32_t gu_vol_shown = -1;                    /* the level read last frame */
+static uint8_t gu_vol_q;                             /* the value the header draws (0..100, even steps) */
 static uint32_t gu_vol_ms;
+static int gu_vol_on(void) { return gu_vol_t != 0u && fm1_ms - gu_vol_t < 1000u; }
 static int32_t gu_vol_percent(int32_t vol) { return (vol * 100 + 511) / 1023; }
-static void gu_vol_strip(int32_t vol)                /* "MASTER", a bar and 0..100 */
-{
-    int32_t pct = gu_vol_percent(vol), f = 72 * vol / 1023, x;
-    char vb[8];
-    fmt_int(vb, pct);
-    cv_begin(GU_VOL_W, GU_VOL_H, GC_BG);
-    x = cv_text(0, 3, &AF_M, "MASTER", GC_AMBER) + 8;
-    cv_rect(x, 8, 72, 8, GC_RAISE);
-    if (f > 0)
-        cv_rect(x, 8, f, 8, GC_AMBER);
-    cv_text(x + 72 + 8, 3, &AF_M, vb, GC_TEXT);
-    cv_blit(GU_VOL_X, GU_VOL_Y);
-    gu_vol_pct = pct;
-}
-static int32_t gu_vol_poll(void)                     /* the level, and the moment it last moved */
+static void gu_vol_poll(void)
 {
     int32_t vol = smk_vol_level();
-    if (gu_vol_shown < 0)
-        gu_vol_shown = vol;                          /* (the first frame: no cursor, the level as it stands) */
-    else if (gu_vol_shown != vol) {
+    if (gu_vol_shown < 0) {                          /* first frame: no cursor, the level as it stands */
+        gu_vol_shown = vol;
+        gu_vol_q = (uint8_t)(gu_vol_percent(vol) & ~1);
+        return;
+    }
+    if (gu_vol_shown != vol) {
         gu_vol_shown = vol;
         gu_vol_t = fm1_ms | 1u;
     }
-    return vol;
+    if (gu_vol_on() && fm1_ms - gu_vol_ms >= GU_VOL_MS) {
+        gu_vol_ms = fm1_ms;
+        gu_vol_q = (uint8_t)(gu_vol_percent(vol) & ~1);
+    }
 }
 #endif
 
@@ -498,10 +488,8 @@ static void gu_draw_head(void)
     int32_t x;
     int toast = gu_toast_on();
 #if BOARD_SMK37
-    int32_t vol = gu_vol_poll();
+    gu_vol_poll();
     int vol_on = gu_vol_on();
-    if (!vol_on)
-        gu_vol_pct = -1;                             /* (the header brings the name back) */
 #endif
     n[0] = 'P';
     n[1] = (char)('0' + (gu.prog + 1u) / 10u);
@@ -512,18 +500,10 @@ static void gu_draw_head(void)
                               (uint32_t)(song.octave + 8) << 12 | (uint32_t)(song.playing != 0) << 16 |
                               (uint32_t)batt_shown() << 20));
 #if BOARD_SMK37
-    h = gu_hashv(h, vol_on);                         /* (not the level: it moves every frame, and the strip below
-                                                      * is what follows it) */
+    h = gu_hashv(h, vol_on ? 1u | (uint32_t)gu_vol_q << 1 : 0u);   /* (the sampled value, not the live one) */
 #endif
-    if (h == gu.sig_head) {
-#if BOARD_SMK37
-        if (vol_on && gu_vol_percent(vol) != gu_vol_pct && fm1_ms - gu_vol_ms >= GU_VOL_MS) {
-            gu_vol_strip(vol);
-            gu_vol_ms = fm1_ms;
-        }
-#endif
+    if (h == gu.sig_head)
         return;
-    }
     gu.sig_head = h;
     cv_begin(240, 32, GC_BG);
     {   /* the battery (or the bolt on USB power), right */
@@ -532,9 +512,16 @@ static void gu_draw_head(void)
     }
     x = 240 - 44;
 #if BOARD_SMK37
-    if (vol_on) {                                       /* the strip paints the row (and hides the program's name) */
-        gu_vol_strip(vol);
-        gu_vol_ms = fm1_ms;
+    if (vol_on) {                                       /* MASTER, a bar and 0..100 in place of the program's name */
+        char vb[8];
+        int32_t xn, f;
+        fmt_int(vb, (int32_t)gu_vol_q);
+        xn = cv_text(8, 7, &AF_M, "MASTER", GC_AMBER) + 8;
+        f = 72 * gu_vol_q / 100;
+        cv_rect(xn, 12, 72, 8, GC_RAISE);
+        if (f > 0)
+            cv_rect(xn, 12, f, 8, GC_AMBER);
+        cv_text(xn + 72 + 8, 7, &AF_M, vb, GC_TEXT);
         goto head_line;
     }
 #endif

@@ -10,7 +10,7 @@
  * SMK_TRS_TARGET (felucca.c, the real firmware) brings the UART; every host or
  * emulator build (hostsim.c, the browser) gets no-op stubs, so nothing there touches
  * a register. */
-#include <stdint.h>   /* (a fragment of felucca.c: here so the file also reads on its own)
+#include <stdint.h>   /* (a fragment of felucca.c: here so the file also reads on its own) */
 #ifdef SMK_TRS_TARGET
 #include "../hal/smk_trs_tx.h"
 

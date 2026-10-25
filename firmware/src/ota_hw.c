@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
-#include <stdint.h>   /* (a fragment of felucca.c: here so the file also reads on its own)
+#include <stdint.h>   /* (a fragment of felucca.c: here so the file also reads on its own) */
 /* The firmware side of ota.c (FELUCCA_OTA): clock and watchdog, erases and writes only inside the
  * OTA area, the progress screen, the commit (record into RAM, core reset). The host test
  * (ota_test.c) provides its own. */

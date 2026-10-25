@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
-#include <stdint.h>   /* (a fragment of felucca.c: here so the file also reads on its own)
+#include <stdint.h>   /* (a fragment of felucca.c: here so the file also reads on its own) */
 /* Drum voices: lean fixed-point drums for a kit of 8 lanes. Felucca's own design, voiced by ear.
  *
  * Every tuned part is a damped sine (a phase accumulator, the SINE table, a decaying envelope): exact

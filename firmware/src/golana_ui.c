@@ -794,7 +794,13 @@ static uint32_t gu_group_btn(void) { return GU_PAGES[gu.page].btn; }
 
 static void gu_leds(void)
 {
+#if BOARD_SMK37
+    /* SMK-37 Pro: the same picture on the button LEDs and, through smk_leds, on the 16 RGB pads (ui_input.c) */
+    static uint8_t zero[LED_BUF];
+    uint8_t nl[LED_BUF] = {0}, nd[LED_BUF] = {0};
+#else
     uint8_t nl[FM1_NCOL] = {0}, nd[FM1_NCOL] = {0};
+#endif
     uint32_t k, c;
     static uint8_t ready;
     if (fm1_led_anim_on())
@@ -806,20 +812,30 @@ static void gu_leds(void)
     for (k = 0; k < NB; k++)
         led_put(nd, panel.btn[k], 1);
     for (k = 0; k < 27u; k++)
-        led_put(nd, 14u + k, 1);
+        led_put(nd, LED_KEY0 + k, 1);
     led_put(nl, panel.btn[gu.save ? B_SAVE : gu_group_btn()], 1);
     led_put(nl, panel.btn[B_ARP], gu_t()->p[GL_ARPON] != 0);
-    if (song.playing)                                   /* PLAY: its green LED while the sequencer plays */
+    if (song.playing) {                                 /* PLAY: its LED while the sequencer plays */
+#if BOARD_SMK37
+        led_put(nl, panel.btn[B_PLAY], 1);
+#else
         nl[LED_PLAY_GREEN >> 3] |= (uint8_t)(1u << (LED_PLAY_GREEN & 7u));
+#endif
+    }
     led_put(nl, panel.btn[B_OCTDN], song.octave < 0);
     led_put(nl, panel.btn[B_OCTUP], song.octave > 0);
     for (k = 0; k < 27u; k++)
-        led_put(nl, 14u + k, (int)((fm1_in.notes >> k) & 1u));
+        led_put(nl, LED_KEY0 + k, (int)((fm1_in.notes >> k) & 1u));
     if (GU_PAGES[gu.page].k[1].id == GV_STEP) {           /* SEQ STEPS: the first 8 keys show the steps */
         uint32_t m = gu_steps(), last = (uint32_t)clamp(gu_t()->p[GL_ARPLAST], 1, 8);
         for (k = 0; k < 8u; k++)
-            led_put(nl, 14u + k, k < last && ((m >> k) & 1u));
+            led_put(nl, LED_KEY0 + k, k < last && ((m >> k) & 1u));
     }
+#if BOARD_SMK37
+    for (c = 0; c < LED_BUF; c++)
+        nd[c] &= (uint8_t)~nl[c];
+    smk_leds(nl, zero, nd, zero, zero);                 /* (lit, breathing, mid: Golana has no breath) */
+#else
     fm1_led_dim_level(0);
     for (c = 0; c < FM1_NCOL; c++) {
         nd[c] &= (uint8_t)~nl[c];
@@ -829,6 +845,7 @@ static void gu_leds(void)
     }
     for (c = 0; c < FM1_NCOL; c++)
         fm1_led[c] = nl[c];
+#endif
 }
 
 /* --------------------------------------------------------------- input --- */

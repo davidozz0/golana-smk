@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
-#include <stdint.h>   /* (a fragment of felucca.c: here so the file also reads on its own)
+#include <stdint.h>   /* (a fragment of felucca.c: here so the file also reads on its own) */
 /* MASTER (#137): the pot read before the audio starts, so the first block plays at its level (it was 2048, about
  * 70 % of the knob, until the main loop's first read after the splash, then a 1/8-per-frame glide from mid-scale:
  * the keys, live from the audio ISR at once, sounded loud under the splash with the knob turned down).

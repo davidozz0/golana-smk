@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
-#include <stdint.h>   /* (a fragment of felucca.c: here so the file also reads on its own)
+#include <stdint.h>   /* (a fragment of felucca.c: here so the file also reads on its own) */
 /* Keyboard, scale, arpeggiator, sequencer and transport.
  * Everything here runs in the audio ISR, once per CTL-sample block, and
  * ends in trk_note_on / trk_note_off: engines never see where a note came from.
@@ -738,7 +738,7 @@ static __attribute__((noinline)) void perf_key_remap(void)
 static uint32_t key_vel(uint32_t k)
 {
     uint32_t v = fm1_in.key_vel[SMK_KEY_F3 + k];
-    return v ? v : kb_vel;
+    return v ? v : 100u;                            /* (Golana 1.5.1: no SELECT VEL, the FM-1's keys are 100) */
 }
 #else
 #define key_vel(k) 100u                             /* Golana 1.5.1: the FM-1's keys have no velocity (fixed 100) */

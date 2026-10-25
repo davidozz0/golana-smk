@@ -1,6 +1,10 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
 #include <stdint.h>   /* (a fragment of felucca.c: here so the file also reads on its own) */
+#ifndef FL_JEDEC_OK                          /* (hal/fm1_flash_map.h, through fm1_flash.h; the host tests here
+                                              * include this file alone) */
+#define FL_JEDEC_OK(id) ((id) == 0xEB6014u || (id) == 0x856014u)
+#endif
 /* Projects: four slots. The slots live in .noinit RAM: they
  * survive resets and UBOOT entry. With FELUCCA_FLASH (default) every save
  * also goes to flash through storage.c, and an

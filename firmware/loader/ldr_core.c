@@ -50,7 +50,6 @@ _Static_assert(LDR_APP_HI <= LDR_REC_LO && LDR_REC_HI <= 0xC0000u && LDR_APP_LO 
 #define LDR_DATA_HI 0xE0000u                    /* bytes (user samples) the host writes */
 #endif
 #define LDR_NSEC ((LDR_APP_HI - LDR_APP_LO) >> 12)
-#define LDR_FL_MAX 0x100000u                    /* flash.bin: at most the 1 MiB part */
 
 static int ldr_fread(uint32_t off, void *p, uint32_t n);
 static int ldr_erase(uint32_t off);
@@ -129,8 +128,10 @@ static int ldr_session(void)
     /* 1. UFW header + entry list (ota.c; it leaves the entries decoded in hdr) */
     if ((rc = ota_ufw(hdr, &fl_off, &fl_size, &ota_off, &ota_len)) != 0)
         return rc;
-    if (!fl_off || fl_size < LDR_APP_HI || fl_size > LDR_FL_MAX)
+    if (!fl_off)
         return -3;
+    if (fl_size != LDR_APP_HI)
+        return -14;                                      /* another board's package: refused before any erase */
     for (i = 0; i < ota_rd16(hdr + 8); i++)
         if (ota_rd16(hdr + 0x40 + i * 0x50u) == 0)
             want = ota_rd16(hdr + 0x40 + i * 0x50u + 4u);   /* flash.bin's data CRC16 */

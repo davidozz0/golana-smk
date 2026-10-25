@@ -449,16 +449,14 @@ static void gu_chip(int32_t xr, int32_t y, const char *s, uint16_t bg, uint16_t 
  * (hal/smk_input.h: FM1_ADC_MASTER is a virtual pot on K1), so turning it shows the level in the header for a
  * second in place of the program: "MASTER", a bar and 0..100 (Clipper's cursor). smk_vol_level (ui_draw.c) is the
  * knob's position 0..1023, so the bar follows the knob and not the square-law gain master_q12 holds. */
-/* The cursor is drawn in the header's own canvas: ONE write of one region per frame. The earlier version wrote a
- * separate strip on top of the header in the same frame (two overlapping LCD windows), and before that it
- * repainted the header on every step of the knob's glide (~60 a second, the panel could not keep up): both
- * flickered. The value shown is SAMPLED (GU_VOL_MS) and in steps of 2, so the header is repainted a handful of
- * times a second at most, and only while the knob moves. */
-#define GU_VOL_MS 150u
+/* Where it is drawn: the header was the wrong place. It is 240 x 32 and the panel could not keep up with
+ * repainting it while the knob's glide ran (two overlapping LCD windows when a strip was added on top of it):
+ * both flickered. The volume now takes the place of CARD 1 while the knob moves — the same box, the same single
+ * cv_blit, the same path as every other card, which the panel redraws dozens of times a second without a
+ * flicker. Nothing of the header is repainted while the knob turns. */
 static uint32_t gu_vol_t;                            /* when the knob last moved (0 = never) */
 static int32_t gu_vol_shown = -1;                    /* the level read last frame */
-static uint8_t gu_vol_q;                             /* the value the header draws (0..100, even steps) */
-static uint32_t gu_vol_ms;
+static uint8_t gu_vol_q;                             /* 0..100, what the card draws */
 static int gu_vol_on(void) { return gu_vol_t != 0u && fm1_ms - gu_vol_t < 1000u; }
 static int32_t gu_vol_percent(int32_t vol) { return (vol * 100 + 511) / 1023; }
 static void gu_vol_poll(void)
@@ -466,17 +464,14 @@ static void gu_vol_poll(void)
     int32_t vol = smk_vol_level();
     if (gu_vol_shown < 0) {                          /* first frame: no cursor, the level as it stands */
         gu_vol_shown = vol;
-        gu_vol_q = (uint8_t)(gu_vol_percent(vol) & ~1);
+        gu_vol_q = (uint8_t)gu_vol_percent(vol);
         return;
     }
     if (gu_vol_shown != vol) {
         gu_vol_shown = vol;
         gu_vol_t = fm1_ms | 1u;
     }
-    if (gu_vol_on() && fm1_ms - gu_vol_ms >= GU_VOL_MS) {
-        gu_vol_ms = fm1_ms;
-        gu_vol_q = (uint8_t)(gu_vol_percent(vol) & ~1);
-    }
+    gu_vol_q = (uint8_t)gu_vol_percent(vol);             /* (the card may repaint as often as any other) */
 }
 #endif
 
@@ -488,8 +483,7 @@ static void gu_draw_head(void)
     int32_t x;
     int toast = gu_toast_on();
 #if BOARD_SMK37
-    gu_vol_poll();
-    int vol_on = gu_vol_on();
+    gu_vol_poll();                                   /* (the poll lives here: it runs every frame, before the cards) */
 #endif
     n[0] = 'P';
     n[1] = (char)('0' + (gu.prog + 1u) / 10u);
@@ -499,9 +493,6 @@ static void gu_draw_head(void)
     h = gu_hashv(h, (int32_t)(gu.prog | gu.dirty << 8 | toast << 9 | (t->p[GL_ARPON] != 0) << 10 |
                               (uint32_t)(song.octave + 8) << 12 | (uint32_t)(song.playing != 0) << 16 |
                               (uint32_t)batt_shown() << 20));
-#if BOARD_SMK37
-    h = gu_hashv(h, vol_on ? 1u | (uint32_t)gu_vol_q << 1 : 0u);   /* (the sampled value, not the live one) */
-#endif
     if (h == gu.sig_head)
         return;
     gu.sig_head = h;
@@ -511,20 +502,6 @@ static void gu_draw_head(void)
         cv_icon_mid(240 - 30, 16, 24, batt_icon(lvl), lvl == 1 ? GC_PINK : lvl == 0 ? GC_MID : GC_TEXT, GC_BG);
     }
     x = 240 - 44;
-#if BOARD_SMK37
-    if (vol_on) {                                       /* MASTER, a bar and 0..100 in place of the program's name */
-        char vb[8];
-        int32_t xn, f;
-        fmt_int(vb, (int32_t)gu_vol_q);
-        xn = cv_text(8, 7, &AF_M, "MASTER", GC_AMBER) + 8;
-        f = 72 * gu_vol_q / 100;
-        cv_rect(xn, 12, 72, 8, GC_RAISE);
-        if (f > 0)
-            cv_rect(xn, 12, f, 8, GC_AMBER);
-        cv_text(xn + 72 + 8, 7, &AF_M, vb, GC_TEXT);
-        goto head_line;
-    }
-#endif
     if (song.octave) {
         b[0] = 'O';
         b[1] = 'C';
@@ -544,9 +521,6 @@ static void gu_draw_head(void)
         if (gu.dirty)
             cv_rrect(xn + 4, 13, 6, 6, -3, GC_PINK, GC_BG);
     }
-#if BOARD_SMK37
-head_line:                                          /* (the volume cursor's branch above lands here) */
-#endif
     cv_rect(0, 31, 240, 1, GC_LINE);
     cv_blit(0, 0);
 }
@@ -638,6 +612,30 @@ static void gu_draw_card(uint32_t k)
     uint32_t h = 0x811C9DC5u;
     int hot = gu.hot == (int8_t)k && fm1_ms - gu.hot_t < 700u;
     uint16_t acc = gu_btn_col(pg->btn), surf = hot ? GC_RAISE : GC_SURF;
+#if BOARD_SMK37
+    if (k == 0u && gu_vol_on()) {                            /* KNOB 1 is MASTER here: its card shows the level while the
+                                                         * knob moves. Same box and same one-blit path as every
+                                                         * other card (the header flickered instead: it is 240 x 32
+                                                         * and repainting it while the knob's glide ran could not be
+                                                         * kept up by the panel) */
+        char vb[8];
+        int32_t pct = (int32_t)gu_vol_q, f = (GU_CW - 12) * pct / 100;
+        h = gu_hashv(h, 0x5A5A0000u | (uint32_t)pct);
+        if (h == gu.sig_card[k])
+            return;
+        gu.sig_card[k] = h;
+        fmt_int(vb, pct);
+        cv_begin(GU_CW, GU_CH, GC_BG);
+        cv_rrect(0, 0, GU_CW, GU_CH, -8, GC_SURF, GC_BG);
+        cv_text_on(8, 6, &AF_S, "MASTER", GC_AMBER, GC_SURF);
+        cv_text(8, GU_CH / 2 - 6, &AF_M, vb, GC_TEXT);
+        cv_rect(6, GU_CH - 14, GU_CW - 12, 6, GC_RAISE);
+        if (f > 0)
+            cv_rect(6, GU_CH - 14, f, 6, GC_AMBER);
+        cv_blit((uint32_t)x, (uint32_t)y);
+        return;
+    }
+#endif
     gu_text(q, b);
     h = gu_hash(h, b);
     h = gu_hash(h, q->label ? q->label : "");

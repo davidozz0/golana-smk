@@ -10,7 +10,6 @@ static void master_poll(void)
 {
     int32_t a = fm1_adc_read(FM1_ADC_MASTER);
     if (a >= 0) {
-        int32_t was = song.master_q12;
         master_knob += (a * 16 - master_knob) / 8;
         song.master_q12 = master_of_pot((uint32_t)(master_knob / 16));
 #if BOARD_SMK37 && SMK_VOL_STYLE

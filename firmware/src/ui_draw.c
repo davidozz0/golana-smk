@@ -69,7 +69,7 @@ static void draw_battery(int32_t bx)
 static int32_t smk_vol_level(void)                      /* the knob's position 0..1023, for the bar and its redraw */
 {
 #if SMK_VOL_KNOB
-    uint32_t g = (uint32_t)(song.master_q12 < 0 ? 0 : song.master_q12) << 8;   /* master_of_pot's inverse */
+    uint32_t g = song.master_q12 << 8;                      /* master_of_pot's inverse (master_q12: uint32_t) */
     uint32_t r = 0, bit = 0x200u;
     while (bit) {
         uint32_t t = r | bit;

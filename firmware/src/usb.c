@@ -192,9 +192,12 @@ static int midi_enqueue(uint32_t pkt, uint32_t source)
     return 1;
 }
 
+#if BOARD_SMK37 && !defined(FELUCCA_LOADER)
+static void smk_trs_output(uint32_t pkt);           /* smk_trs.c is included after this file (felucca.c) */
+#endif
 static void midi_out_event(uint32_t pkt)            /* from the audio ISR */
 {
-#if BOARD_SMK37
+#if BOARD_SMK37 && !defined(FELUCCA_LOADER)         /* (the update loader has no jack: no smk_trs.c in it) */
     smk_trs_output(pkt);                            /* SMK-37 Pro: mirror to the TRS jack (if on) */
 #endif
     if (usb.config && mo_w - mo_r < MQ) {

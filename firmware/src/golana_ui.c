@@ -496,6 +496,21 @@ static void gu_draw_head(void)
         cv_icon_mid(240 - 30, 16, 24, batt_icon(lvl), lvl == 1 ? GC_PINK : lvl == 0 ? GC_MID : GC_TEXT, GC_BG);
     }
     x = 240 - 44;
+#if BOARD_SMK37
+    if (vol_on) {                                       /* the volume, while K1 turns: MASTER, a bar, 0..100 in the
+                                                         * header's row (the OCT / PLAY chips come back with it) */
+        char vb[8];
+        int32_t xn, w = 72, f;
+        fmt_int(vb, (vol * 100 + 511) / 1023);
+        xn = cv_text(8, 7, &AF_M, "MASTER", GC_AMBER) + 8;
+        f = w * vol / 1023;
+        cv_rect(xn, 12, w, 8, GC_RAISE);
+        if (f > 0)
+            cv_rect(xn, 12, f, 8, GC_AMBER);
+        cv_text(xn + w + 8, 7, &AF_M, vb, GC_TEXT);
+        goto head_line;
+    }
+#endif
     if (song.octave) {
         b[0] = 'O';
         b[1] = 'C';
@@ -507,19 +522,6 @@ static void gu_draw_head(void)
     }
     if (song.playing)
         gu_chip(x, 8, "PLAY", gu_btn_col(B_REC), GC_INK, &x);
-#if BOARD_SMK37
-    if (vol_on) {                                       /* the volume, while K1 turns: MASTER, a bar, 0..100 */
-        char vb[8];
-        int32_t xn, w = 72, f;
-        fmt_int(vb, (vol * 100 + 511) / 1023);
-        xn = cv_text(8, 7, &AF_M, "MASTER", GC_AMBER) + 8;
-        f = w * vol / 1023;
-        cv_rect(xn, 12, w, 8, GC_RAISE);
-        if (f > 0)
-            cv_rect(xn, 12, f, 8, GC_AMBER);
-        cv_text(xn + w + 8, 7, &AF_M, vb, GC_TEXT);
-    } else
-#endif
     if (toast) {
         cv_text(8, 7, &AF_M, gu.toast, GC_AMBER);
     } else {
@@ -528,6 +530,9 @@ static void gu_draw_head(void)
         if (gu.dirty)
             cv_rrect(xn + 4, 13, 6, 6, -3, GC_PINK, GC_BG);
     }
+#if BOARD_SMK37
+head_line:                                          /* (the volume cursor's branch above lands here) */
+#endif
     cv_rect(0, 31, 240, 1, GC_LINE);
     cv_blit(0, 0);
 }

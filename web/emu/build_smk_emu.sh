@@ -25,6 +25,8 @@ EXPORTS="synth_init synth_midi synth_render fw_event fw_release fw_screen fw_sta
 WEXPORTS=""
 for e in $EXPORTS; do WEXPORTS="$WEXPORTS -Wl,--export=$e"; done
 # shellcheck disable=SC2086
+# come la build da consegnare: Golana ha una traccia sola, i fader non comandano niente
+EMU_CFLAGS="${EMU_CFLAGS:-} -DSMK_FADER_DISABLE=${SMK_FADER_DISABLE:-0xF}"
 emcc ${EMU_OPT:--O2} -ffp-contract=off -std=gnu99 -w ${EMU_CFLAGS:-} \
     "-DFELUCCA_VERSION=\"$VERSION\"" -Ibuild/gen -Ifirmware/src -Ifirmware/hal $WEXPORTS \
     --no-entry -sSTANDALONE_WASM -sSTACK_SIZE=1048576 -sINITIAL_MEMORY=33554432 -sFILESYSTEM=0 \

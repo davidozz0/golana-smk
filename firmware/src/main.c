@@ -111,7 +111,11 @@ static void smk_faders(void)
         pv = smk_fbank == 1 ? &trk[i].p[P_PAN] : smk_fbank == 2 ? &trk[i].p[P_REV] :
              smk_fbank == 3 ? &trk[i].p[P_DLY] : &trk[i].p[P_LEVEL];
         *pv = (int16_t)(smk_fbank == 1 ? (int32_t)v - 64 : (int32_t)v);   /* (PAN -64..63) */
-        ui.force = 1;
+#if !GOLANA
+        ui.force = 1;                                 /* (Felucca: the MIXER page's cells. Golana's cards follow
+                                                       * their own signature: ui.force there repaints the whole
+                                                       * screen, a flash at every step of the fader) */
+#endif
     }
 }
 
@@ -388,9 +392,8 @@ static void fm1_main(void)
         gu_input();
         settings_poll();                              /* queued settings save: only while stopped */
         felucca_dbg.stage = 2;
-#if BOARD_SMK37
-        smk_grid();                                   /* the pads' step grid (ui_input.c smk_leds reads it) */
-#endif
+        /* (no smk_grid() here: smk_pad_grid is Felucca's step grid, and Golana has none — with it the pads lit
+         * up by the sequencer's grid state) */
         gu_leds();
 #if BOARD_SMK37
         /* the SMK-37's own hardware, as on Felucca's path below: without these the wheels never move the

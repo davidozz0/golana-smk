@@ -253,7 +253,17 @@ static void web_frame(void)
 #if GOLANA
     gu_input();
     settings_poll();
+#if BOARD_SMK37
+    smk_grid();                                  /* the pads' step grid (ui_input.c smk_leds reads it) */
+#endif
     gu_leds();
+#if BOARD_SMK37
+    /* the SMK's hardware, as in main.c's loop: wheels, faders, TRS OUT switch, pad LED chain */
+    smk_faders();
+    smk_wheels();
+    smk_trs_configure((ui_padprefs & PAD_TRS_OUT) != 0u);
+    padled_flush();
+#endif
     gu_draw();
 #else
     ui_input();

@@ -12,15 +12,9 @@ static void master_poll(void)
     if (a >= 0) {
         master_knob += (a * 16 - master_knob) / 8;
         song.master_q12 = master_of_pot((uint32_t)(master_knob / 16));
-#if BOARD_SMK37 && SMK_VOL_STYLE
-        {
-            static int32_t shown = -1;                /* SMK_VOL_POLL: the header's volume bar (ui_draw.c draw_volume); */
-            if (smk_vol_level() != shown) {           /* a full redraw only when the bar's pixels change */
-                shown = smk_vol_level();
-                ui.force = 1;
-            }
-        }
-#endif
+        /* (no ui.force here: it redraws the whole screen, and the level moves every frame while the knob's
+         * glide runs, so the panel flashed. The volume display redraws itself — golana_ui.c gu_draw_head
+         * keeps the level in its signature, ui_draw.c draw_volume its bar) */
     }
 }
 /* power-on (main.c), before audio_init: the knob as it stands, no glide */

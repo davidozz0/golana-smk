@@ -388,7 +388,22 @@ static void fm1_main(void)
         gu_input();
         settings_poll();                              /* queued settings save: only while stopped */
         felucca_dbg.stage = 2;
+#if BOARD_SMK37
+        smk_grid();                                   /* the pads' step grid (ui_input.c smk_leds reads it) */
+#endif
         gu_leds();
+#if BOARD_SMK37
+        /* the SMK-37's own hardware, as on Felucca's path below: without these the wheels never move the
+         * bend, the TRS OUT switch is never applied and the pad LEDs are never clocked out */
+        smk_faders();
+        smk_wheels();
+        smk_trs_configure((ui_padprefs & PAD_TRS_OUT) != 0u);   /* TRS OUT switch (ui_padprefs bit 5) */
+#if !defined(FELUCCA_WEB)
+        smk_pad_sens(ui_padprefs & 3u);                 /* PAD SENS */
+        pad_track_set((ui_padprefs >> 2) & 7u);         /* PAD TRACK: the pads' own track (target only) */
+#endif
+        padled_flush();                                 /* the pads' colours, between LCD transfers */
+#endif
         gu_draw();
 #else
         ui_input();

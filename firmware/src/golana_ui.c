@@ -444,6 +444,27 @@ static void gu_chip(int32_t xr, int32_t y, const char *s, uint16_t bg, uint16_t 
     *xo = xr - w - 4;
 }
 
+#if BOARD_SMK37
+/* SMK-37 Pro: the MASTER volume. On the FM-1 it is a pot on the panel; here it is KNOB 1, where the encoder stands
+ * (hal/smk_input.h: FM1_ADC_MASTER is a virtual pot on K1), so turning it shows the level in the header for a
+ * second in place of the program: "MASTER", a bar and 0..100 (Clipper's cursor). smk_vol_level (ui_draw.c) is the
+ * knob's position 0..1023, so the bar follows the knob and not the square-law gain master_q12 holds. */
+static uint32_t gu_vol_t;
+static int32_t gu_vol_shown = -1;
+static int gu_vol_on(void) { return gu_vol_t != 0u && fm1_ms - gu_vol_t < 1000u; }
+static int32_t gu_vol_poll(void)                     /* the level, and the moment it last moved */
+{
+    int32_t vol = smk_vol_level();
+    if (gu_vol_shown < 0)
+        gu_vol_shown = vol;                          /* (the first frame: no cursor, the level as it stands) */
+    else if (gu_vol_shown != vol) {
+        gu_vol_shown = vol;
+        gu_vol_t = fm1_ms | 1u;
+    }
+    return vol;
+}
+#endif
+
 static void gu_draw_head(void)
 {
     const track_t *t = gu_t();
@@ -451,6 +472,10 @@ static void gu_draw_head(void)
     uint32_t h = 0x811C9DC5u;
     int32_t x;
     int toast = gu_toast_on();
+#if BOARD_SMK37
+    int32_t vol = gu_vol_poll();
+    int vol_on = gu_vol_on();
+#endif
     n[0] = 'P';
     n[1] = (char)('0' + (gu.prog + 1u) / 10u);
     n[2] = (char)('0' + (gu.prog + 1u) % 10u);
@@ -459,6 +484,9 @@ static void gu_draw_head(void)
     h = gu_hashv(h, (int32_t)(gu.prog | gu.dirty << 8 | toast << 9 | (t->p[GL_ARPON] != 0) << 10 |
                               (uint32_t)(song.octave + 8) << 12 | (uint32_t)(song.playing != 0) << 16 |
                               (uint32_t)batt_shown() << 20));
+#if BOARD_SMK37
+    h = gu_hashv(h, vol << 1 | vol_on);
+#endif
     if (h == gu.sig_head)
         return;
     gu.sig_head = h;
@@ -479,6 +507,19 @@ static void gu_draw_head(void)
     }
     if (song.playing)
         gu_chip(x, 8, "PLAY", gu_btn_col(B_REC), GC_INK, &x);
+#if BOARD_SMK37
+    if (vol_on) {                                       /* the volume, while K1 turns: MASTER, a bar, 0..100 */
+        char vb[8];
+        int32_t xn, w = 72, f;
+        fmt_int(vb, (vol * 100 + 511) / 1023);
+        xn = cv_text(8, 7, &AF_M, "MASTER", GC_AMBER) + 8;
+        f = w * vol / 1023;
+        cv_rect(xn, 12, w, 8, GC_RAISE);
+        if (f > 0)
+            cv_rect(xn, 12, f, 8, GC_AMBER);
+        cv_text(xn + w + 8, 7, &AF_M, vb, GC_TEXT);
+    } else
+#endif
     if (toast) {
         cv_text(8, 7, &AF_M, gu.toast, GC_AMBER);
     } else {
